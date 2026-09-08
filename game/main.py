@@ -1,5 +1,6 @@
 
 import pygame
+
 pygame.init()
 
 
@@ -11,18 +12,23 @@ WIDTH = 1000
 HEIGHT = 600
 FPS = 60
 
-# Cria a janela usando a largura e altura que definimos acima
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
-# Nome que aparece na barra da janela
-pygame.display.set_caption("Ciência Delas")
+screen = pygame.display.set_mode(
+    (WIDTH, HEIGHT)
+)
 
-# Cria um relógio para controlar a velocidade do jogo
+pygame.display.set_caption(
+    "Ciência Delas"
+)
+
 clock = pygame.time.Clock()
 
 
+# ============================================================
+# CORES
+# ============================================================
+
 BG = (25, 25, 35)
-WHITE = (240, 240, 240)
 GREEN = (80, 200, 120)
 
 
@@ -30,34 +36,132 @@ GREEN = (80, 200, 120)
 # JOGADOR
 # ============================================================
 
-player = pygame.Rect(100, 400, 64, 80)
+player = pygame.Rect(
+    100,
+    400,
+    64,
+    80
+)
 
-# Carrega a spritesheet inteira
+
+# ============================================================
+# SPRITESHEET
+# ============================================================
+
 spritesheet = pygame.image.load(
     "assets/spritesheet1.png"
 ).convert_alpha()
 
-# Pega o primeiro frame da spritesheet
-player_image = spritesheet.subsurface(
-    pygame.Rect(0, 0, 512, 512)
-)
 
-# Redimensiona o frame para o tamanho que queremos no jogo
-player_image = pygame.transform.scale(
-    player_image,
-    (230, 230)
-)
+# ============================================================
+# POSIÇÕES DOS SPRITES
+# ============================================================
 
-# Cria uma versão da imagem virada horizontalmente
-# para quando o personagem estiver olhando para a esquerda.
-player_image_left = pygame.transform.flip(
-    player_image,
-    True,
-    False
-)
+frames = [
+    pygame.Rect(0, 0, 512, 512),          # 0 - parado
+    pygame.Rect(2000, 30, 512, 512),      # 1 - andando
+    pygame.Rect(0, 1050, 512, 512),     # 2 - andando
+    pygame.Rect(2350, 1050, 512, 512),    # 3 - andando
+    pygame.Rect(650, 2080, 512, 512),     # 4 - andando
+    pygame.Rect(3050, 2080, 512, 512),    # 5 - andando
+    pygame.Rect(1020, 3100, 512, 512),    # 6 - andando
+    pygame.Rect(1950, 3550, 512, 512),    # 7 - andando
+    pygame.Rect(0, 4630, 512, 512),       # 8 - subindo
+    pygame.Rect(2150, 4650, 512, 512),    # 9 - aterrissando
+    pygame.Rect(0, 5000, 800, 800)        # 10 - caindo
+]
 
-# Começamos olhando para a direita
+
+# ============================================================
+# TAMANHO DE CADA FRAME
+# ============================================================
+
+FRAME_SIZES = [
+    240,  # 0 - parado
+    240,  # 1 - andando
+    240,  # 2 - andando
+    240,  # 3 - andando
+    240,  # 4 - andando
+    240,  # 5 - andando
+    240,  # 6 - andando
+    300,  # 7 - andando
+    300,  # 8 - subindo
+    300,  # 9 - aterrissando
+    100   # 10 - caindo
+]
+
+
+# ============================================================
+# CRIAR OS FRAMES
+# ============================================================
+
+sprite_frames = []
+
+
+for frame_index, frame_rect in enumerate(frames):
+
+    # Recorta o sprite da spritesheet.
+
+    frame = spritesheet.subsurface(
+        frame_rect
+    ).copy()
+
+
+    # Altura desejada para esse frame.
+
+    sprite_height = FRAME_SIZES[
+        frame_index
+    ]
+
+
+    # Mantém a proporção original.
+
+    new_width = int(
+        frame.get_width()
+        * sprite_height
+        / frame.get_height()
+    )
+
+
+    # Redimensiona.
+
+    frame = pygame.transform.scale(
+        frame,
+        (
+            new_width,
+            sprite_height
+        )
+    )
+
+
+    # Guarda na lista.
+
+    sprite_frames.append(
+        frame
+    )
+
+
+# ============================================================
+# CONTROLE DA ANIMAÇÃO
+# ============================================================
+
+current_frame = 0
+
+animation_timer = 100
+landing_timer = 150
+
+FRAME_DURATION = 100
+LANDING_DURATION = 150
+
 facing_right = True
+
+
+# ============================================================
+# TESTE DE FRAME
+# ============================================================
+
+TEST_MODE = False
+TEST_FRAME = 0
 
 
 # ============================================================
@@ -66,11 +170,11 @@ facing_right = True
 
 velocity_y = 0
 
-gravity = 0.8
+gravity = 0.75
 
-jump_strength = -30
+jump_strength = -25
 
-speed = 5
+speed = 4.4
 
 on_ground = False
 
@@ -80,10 +184,10 @@ on_ground = False
 # ============================================================
 
 ground = pygame.Rect(
-    0,      # posição X
-    500,    # posição Y
-    3000,   # largura
-    100     # altura
+    0,
+    500,
+    31000,
+    100
 )
 
 
@@ -92,40 +196,57 @@ ground = pygame.Rect(
 # ============================================================
 
 camera_x = 0
+camera_y = 0
 
 
 # ============================================================
 # FUNÇÃO DO FUNDO
 # ============================================================
 
-def draw_background(camera_x):
+def draw_background(camera_x, camera_y):
 
-    # --------------------------------------------------------
-    # CÉU
-    # --------------------------------------------------------
-
-    # Limpa a tela a cada frame.
     screen.fill(BG)
 
 
-    # --------------------------------------------------------
+    # ========================================================
     # MONTANHAS DISTANTES
-    # --------------------------------------------------------
+    # ========================================================
 
-    # As montanhas se movem mais devagar que a câmera.
-    # Isso cria o efeito de profundidade chamado PARALLAX.
+    mountain_offset_x = int(
+        camera_x * 0.2
+    )
 
-    mountain_offset = int(camera_x * 0.2)
+    mountain_offset_y = camera_y
 
 
-    for x in range(-500, 4000, 500):
+    for x in range(
+        -500,
+        4000,
+        500
+    ):
 
-        x_screen = x - mountain_offset
+        x_screen = (
+            x
+            - mountain_offset_x
+        )
 
         points = [
-            (x_screen, 450),
-            (x_screen + 250, 250),
-            (x_screen + 500, 450)
+
+            (
+                x_screen,
+                450 - mountain_offset_y
+            ),
+
+            (
+                x_screen + 250,
+                250 - mountain_offset_y
+            ),
+
+            (
+                x_screen + 500,
+                450 - mountain_offset_y
+            )
+
         ]
 
         pygame.draw.polygon(
@@ -135,21 +256,43 @@ def draw_background(camera_x):
         )
 
 
-    # --------------------------------------------------------
-    # MONTANHAS MAIS PRÓXIMAS
-    # --------------------------------------------------------
+    # ========================================================
+    # MONTANHAS PRÓXIMAS
+    # ========================================================
 
-    mountain_offset = int(camera_x * 0.4)
+    mountain_offset_x = int(
+        camera_x * 0.4
+    )
 
 
-    for x in range(-2000, 4000, 700):
+    for x in range(
+        -2000,
+        4000,
+        700
+    ):
 
-        x_screen = x - mountain_offset
+        x_screen = (
+            x
+            - mountain_offset_x
+        )
 
         points = [
-            (x_screen, 500),
-            (x_screen + 350, 300),
-            (x_screen + 700, 500)
+
+            (
+                x_screen,
+                500 - mountain_offset_y
+            ),
+
+            (
+                x_screen + 350,
+                300 - mountain_offset_y
+            ),
+
+            (
+                x_screen + 700,
+                500 - mountain_offset_y
+            )
+
         ]
 
         pygame.draw.polygon(
@@ -165,7 +308,15 @@ def draw_background(camera_x):
 
 running = True
 
+
 while running:
+
+
+    # ========================================================
+    # TEMPO
+    # ========================================================
+
+    current_time = pygame.time.get_ticks()
 
 
     # ========================================================
@@ -175,6 +326,7 @@ while running:
     for event in pygame.event.get():
 
         if event.type == pygame.QUIT:
+
             running = False
 
 
@@ -189,20 +341,31 @@ while running:
     # MOVIMENTO HORIZONTAL
     # ========================================================
 
-    if keys[pygame.K_a] or keys[pygame.K_LEFT]:
+    moving = False
+
+
+    if (
+        keys[pygame.K_a]
+        or keys[pygame.K_LEFT]
+    ):
 
         player.x -= speed
 
-        # Agora o personagem passa a olhar para a esquerda
         facing_right = False
 
+        moving = True
 
-    if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
+
+    if (
+        keys[pygame.K_d]
+        or keys[pygame.K_RIGHT]
+    ):
 
         player.x += speed
 
-        # Agora o personagem passa a olhar para a direita
         facing_right = True
+
+        moving = True
 
 
     # ========================================================
@@ -210,8 +373,15 @@ while running:
     # ========================================================
 
     if (
-        (keys[pygame.K_SPACE] or keys[pygame.K_w] or keys[pygame.K_UP])
+
+        (
+            keys[pygame.K_SPACE]
+            or keys[pygame.K_w]
+            or keys[pygame.K_UP]
+        )
+
         and on_ground
+
     ):
 
         velocity_y = jump_strength
@@ -232,7 +402,23 @@ while running:
     # COLISÃO COM O CHÃO
     # ========================================================
 
-    if player.colliderect(ground):
+    if (
+
+        player.colliderect(ground)
+
+        and velocity_y >= 0
+
+    ):
+
+        # Se estava no ar, registra o momento
+        # da aterrissagem.
+
+        if not on_ground:
+
+            landing_timer = current_time
+
+
+        # Coloca o jogador exatamente sobre o chão.
 
         player.bottom = ground.top
 
@@ -242,85 +428,269 @@ while running:
 
 
     # ========================================================
-    # CÂMERA
+    # ANIMAÇÃO
     # ========================================================
 
-    # A câmera acompanha o jogador horizontalmente.
-    camera_x = player.centerx - WIDTH // 2
+    # --------------------------------------------------------
+    # NO AR
+    # --------------------------------------------------------
+
+    if not on_ground:
 
 
-    # A câmera só começa a subir quando o jogador
-    # chega perto do topo da tela.
-    camera_y = player.y - 400
+        # SUBINDO
+
+        if velocity_y < 0:
+
+            current_frame = 8
+
+
+        # CAINDO
+
+        else:
+
+            current_frame = 10
 
 
     # --------------------------------------------------------
-    # LIMITES DA CÂMERA
+    # ATERRISSANDO
     # --------------------------------------------------------
 
-    # A câmera nunca pode mostrar uma região
-    # que não existe à esquerda do mundo.
-    camera_x = max(0, camera_x)
+    elif (
 
-    # A câmera nunca pode passar do final do mundo.
-    camera_x = min(camera_x, ground.width - WIDTH)
+        current_time
+        - landing_timer
+
+        <
+
+        LANDING_DURATION
+
+    ):
+
+        current_frame = 9
 
 
-    # A câmera vertical não pode ficar positiva.
-    # Valores negativos significam que o mundo
-    # está sendo deslocado para baixo na tela.
-    camera_y = min(0, camera_y)
+    # --------------------------------------------------------
+    # NO CHÃO
+    # --------------------------------------------------------
+
+    else:
+
+
+        # CAMINHANDO
+
+        if moving:
+
+
+            # Se está vindo de uma animação
+            # diferente, começa a caminhada no frame 1.
+
+            if (
+                current_frame < 1
+                or current_frame > 7
+            ):
+
+                current_frame = 1
+
+                animation_timer = current_time
+
+
+            # Troca o frame quando chega a hora.
+
+            elif (
+
+                current_time
+                - animation_timer
+
+                >=
+
+                FRAME_DURATION
+
+            ):
+
+                current_frame += 1
+
+
+                # Depois do frame 7,
+                # volta para o frame 1.
+
+                if current_frame > 7:
+
+                    current_frame = 1
+
+
+                animation_timer = current_time
+
+
+        # PARADO
+
+        else:
+
+            current_frame = 0
+
+
     # ========================================================
-    # DESENHAR
+    # CÂMERA HORIZONTAL
     # ========================================================
 
-    # Primeiro desenhamos o fundo.
+    camera_x = (
+        player.centerx
+        - WIDTH // 2
+    )
 
-    draw_background(camera_x)
+
+    camera_x = max(
+        0,
+        camera_x
+    )
 
 
-    # --------------------------------------------------------
-    # CHÃO
-    # --------------------------------------------------------
+    camera_x = min(
+        camera_x,
+        ground.width - WIDTH
+    )
+
+
+    # ========================================================
+    # CÂMERA VERTICAL
+    # ========================================================
+
+    camera_y = min(
+        0,
+        player.y - 400
+    )
+
+
+    # ========================================================
+    # DESENHAR FUNDO
+    # ========================================================
+
+    draw_background(
+        camera_x,
+        camera_y
+    )
+
+
+    # ========================================================
+    # DESENHAR CHÃO
+    # ========================================================
 
     pygame.draw.rect(
+
         screen,
+
         GREEN,
+
         (
+
             ground.x - camera_x,
-            ground.y,
+
+            ground.y - camera_y,
+
             ground.width,
+
             ground.height
+
         )
-    )
 
-
-    # --------------------------------------------------------
-    # JOGADOR
-    # --------------------------------------------------------
-
-    # Escolhe qual imagem usar dependendo
-    # da direção que o personagem está olhando.
-
-    if facing_right:
-        image = player_image
-    else:
-        image = player_image_left
-
-
-    # Desenha o personagem na posição correta da tela.
-
-    screen.blit(
-        image,
-        (
-            player.x - camera_x,
-            player.y
-        )
     )
 
 
     # ========================================================
-    # ATUALIZAÇÃO DA TELA
+    # ESCOLHER IMAGEM
+    # ========================================================
+
+    if TEST_MODE:
+
+        image = sprite_frames[
+            TEST_FRAME
+        ]
+
+    else:
+
+        image = sprite_frames[
+            current_frame
+        ]
+
+
+    # ========================================================
+    # VIRAR PARA A ESQUERDA
+    # ========================================================
+
+    if not facing_right:
+
+        image = pygame.transform.flip(
+            image,
+            True,
+            False
+        )
+
+
+    # ========================================================
+    # POSIÇÃO DA IMAGEM
+    # ========================================================
+
+    image_x = (
+
+        player.centerx
+
+        -
+
+        image.get_width() // 2
+
+        -
+
+        camera_x
+
+    )
+
+
+    image_y = (
+
+        player.bottom
+
+        -
+
+        image.get_height()
+
+        -
+
+        camera_y
+
+        +
+
+        160
+
+    )
+
+
+    # ========================================================
+    # AJUSTE DO FRAME DE QUEDA
+    # ========================================================
+
+    if current_frame == 10:
+
+        image_y -= 160
+
+
+    # ========================================================
+    # DESENHAR JOGADOR
+    # ========================================================
+
+    screen.blit(
+
+        image,
+
+        (
+            image_x,
+            image_y
+        )
+
+    )
+
+
+    # ========================================================
+    # ATUALIZAR TELA
     # ========================================================
 
     pygame.display.flip()
@@ -330,12 +700,13 @@ while running:
     # FPS
     # ========================================================
 
-    clock.tick(FPS)
+    clock.tick(
+        FPS
+    )
 
 
 # ============================================================
-# ENCERRAMENTO
+# ENCERRAR
 # ============================================================
 
 pygame.quit()
-
