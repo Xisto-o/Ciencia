@@ -727,8 +727,8 @@ pygame.init()
 # CONFIGURAÇÕES DA JANELA
 # ============================================================
 
-WIDTH = 1000
-HEIGHT = 600
+WIDTH = 1200
+HEIGHT = 720
 FPS = 60
 
 
@@ -767,7 +767,7 @@ player = pygame.Rect(
 # FASE
 # ============================================================
 
-fase = 2
+fase = 3
 
 
 # ============================================================
@@ -802,6 +802,20 @@ elif fase == 2:
     background_path = (
         "ciencia-main/game/assets/background2.png"
     )
+elif fase == 3:
+
+    spritesheet_path = (
+        "ciencia-main/game/assets/spritesheet3.png"
+    )
+
+    ground_path = (
+        "ciencia-main/game/assets/chao3.png"
+    )
+
+    background_path = (
+        "ciencia-main/game/assets/background3.png"
+    )
+
 
 
 # ============================================================
@@ -1564,10 +1578,211 @@ hazards_fase2 = [
 
     ]
 
+# ============================================================
+# PLATAFORMAS DA FASE 3
+# ============================================================
 
-# ============================================================
-# ESCOLHER AS COLISÕES DA FASE
-# ============================================================
+grounds_fase3 = [
+
+    # ========================================================
+    # PARTE ESQUERDA
+    # ========================================================
+
+    # Ilha superior esquerda
+    pygame.Rect(
+        5,
+        200 + ground_y,
+        225,
+        22
+    ),
+
+    # Ilha grande esquerda - parte inferior
+    pygame.Rect(
+        5,
+        345 + ground_y,
+        230,
+        22
+    ),
+
+    # Ilha grande esquerda - plataforma superior
+    pygame.Rect(
+        220,
+        366 + ground_y,
+        335,
+        22
+    ),
+
+    # Plataformas inferiores da esquerda
+    pygame.Rect(
+        235,
+        518 + ground_y,
+        125,
+        22
+    ),
+
+    pygame.Rect(
+        385,
+        532 + ground_y,
+        90,
+        22
+    ),
+
+    pygame.Rect(
+        445,
+        527 + ground_y,
+        110,
+        22
+    ),
+
+    pygame.Rect(
+        535,
+        538 + ground_y,
+        90,
+        22
+    ),
+
+    # Plataforma do telescópio
+    pygame.Rect(
+        560,
+        418 + ground_y,
+        170,
+        22
+    ),
+
+
+    # ========================================================
+    # PARTE SUPERIOR
+    # ========================================================
+
+    # Ilha flutuante grande
+    pygame.Rect(
+        670,
+        230 + ground_y,
+        260,
+        22
+    ),
+
+    # Ilha pequena superior central
+    pygame.Rect(
+        910,
+        370 + ground_y,
+        100,
+        22
+    ),
+
+
+    # ========================================================
+    # CENTRO
+    # ========================================================
+
+    # Plataforma do terrário
+    pygame.Rect(
+        770,
+        468 + ground_y,
+        140,
+        22
+    ),
+
+    # Plataforma com átomo
+    pygame.Rect(
+        1015,
+        468 + ground_y,
+        180,
+        22
+    ),
+
+    # Ilha superior com cachoeira
+    pygame.Rect(
+        1100,
+        292 + ground_y,
+        180,
+        22
+    ),
+
+    # Ilha pequena
+    pygame.Rect(
+        1292,
+        329 + ground_y,
+        85,
+        22
+    ),
+
+    # Plataforma inferior central
+    pygame.Rect(
+        1220,
+        504 + ground_y,
+        165,
+        22
+    ),
+
+    # Ilha pequena
+    pygame.Rect(
+        1405,
+        410 + ground_y,
+        75,
+        22
+    ),
+
+
+    # ========================================================
+    # DIREITA-CENTRO
+    # ========================================================
+
+    # Plataforma com equipamento
+    pygame.Rect(
+        1430,
+        530 + ground_y,
+        180,
+        22
+    ),
+
+    # Ilha superior
+    pygame.Rect(
+        1605,
+        366 + ground_y,
+        105,
+        22
+    ),
+
+    # Plataforma com painel solar
+    pygame.Rect(
+        1635,
+        515 + ground_y,
+        170,
+        22
+    ),
+
+    # Ilha pequena superior
+    pygame.Rect(
+        1740,
+        402 + ground_y,
+        75,
+        22
+    ),
+
+
+    # ========================================================
+    # EXTREMA DIREITA
+    # ========================================================
+
+    # Ilha grande superior com laboratório
+    pygame.Rect(
+        1815,
+        312 + ground_y,
+        220,
+        22
+    ),
+
+    # Plataforma inferior direita
+    pygame.Rect(
+        1835,
+        458 + ground_y,
+        205,
+        22
+    )
+
+]
+
 
 if fase == 1:
 
@@ -1581,6 +1796,13 @@ elif fase == 2:
     grounds = grounds_fase2
 
     hazards = hazards_fase2
+
+elif fase == 3:
+
+    grounds = grounds_fase3
+
+    hazards = []
+
 
 
 # ============================================================
@@ -1599,7 +1821,7 @@ def take_damage():
     # Volta para a posição inicial.
 
     player.x = 100
-    player.y = 400
+    player.y = 100
 
 
     # Para a queda.
@@ -1653,11 +1875,29 @@ def draw_background(camera_x, camera_y):
     background_x = -camera_x * 0.1
 
 
-    # Movimento vertical.
+    # ========================================================
+    # POSIÇÃO VERTICAL DO BACKGROUND
+    # ========================================================
 
-    background_y = (
-        -camera_y * 0.1
-    ) - 350
+    if fase == 1:
+
+        background_y = (
+            -camera_y * 0.1
+        ) -100
+
+
+    elif fase == 2:
+
+        background_y = (
+            -camera_y * 0.1
+        ) - 50
+
+
+    elif fase == 3:
+
+        background_y = (
+            -camera_y * 0.1
+        ) - 50
 
 
     # Desenha o fundo.
@@ -1669,8 +1909,6 @@ def draw_background(camera_x, camera_y):
             background_y
         )
     )
-
-
 # ============================================================
 # LOOP PRINCIPAL
 # ============================================================
